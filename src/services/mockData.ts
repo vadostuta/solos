@@ -8,9 +8,9 @@ import {
 
 // Mock user
 export const mockUser: User = {
-  name: 'Andrzej',
+  name: 'Rayan',
   avatarUrl:
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Andrzej&backgroundColor=b6e3f4&skinColor=ffdbb4',
+    'https://pacificnwreviews.wordpress.com/wp-content/uploads/2013/04/ryan-gosling-place-beyond-the-pines.jpg',
   email: 'andrzej@example.com'
 }
 
