@@ -8,9 +8,9 @@ import {
 
 // Mock user
 export const mockUser: User = {
-  name: 'Alex Morgan',
-  avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-  email: 'alex@example.com',
+  name: 'Andrzej',
+  avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Andrzej&backgroundColor=b6e3f4&skinColor=ffdbb4',
+  email: 'andrzej@example.com',
 }
 
 // Helper to generate random date within range
@@ -29,10 +29,9 @@ const randomAmount = (min: number, max: number): number => {
 export const generateMockPayouts = (count: number = 50): Payout[] => {
   const payouts: Payout[] = []
   const today = new Date()
-  const startDate = new Date(today)
-  startDate.setDate(today.getDate() - 90) // 90 days ago
-  const endDate = new Date(today)
-  endDate.setDate(today.getDate() + 30) // 30 days in future
+  // September 1, 2025 to December 31, 2025
+  const startDate = new Date(2025, 8, 1) // Month is 0-indexed, so 8 = September
+  const endDate = new Date(2025, 11, 31) // 11 = December
 
   const platforms = Object.values(Platform)
   const statuses = Object.values(PayoutStatus)
@@ -75,9 +74,9 @@ export const generateMockPayouts = (count: number = 50): Payout[] => {
 // Generate mock expenses
 export const generateMockExpenses = (count: number = 30): Expense[] => {
   const expenses: Expense[] = []
-  const today = new Date()
-  const startDate = new Date(today)
-  startDate.setDate(today.getDate() - 90)
+  // September 1, 2025 to December 31, 2025
+  const startDate = new Date(2025, 8, 1) // Month is 0-indexed, so 8 = September
+  const endDate = new Date(2025, 11, 31) // 11 = December
 
   const categories = [
     'Platform Fees',
@@ -99,7 +98,7 @@ export const generateMockExpenses = (count: number = 30): Expense[] => {
     expenses.push({
       id: `expense-${i + 1}`,
       amount: randomAmount(50, 1000),
-      date: randomDate(startDate, today),
+      date: randomDate(startDate, endDate),
       category,
       description: `${category} ${platform ? `- ${platform}` : ''}`,
       platform,

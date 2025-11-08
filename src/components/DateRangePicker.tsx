@@ -51,6 +51,23 @@ export function DateRangePicker({
                 className="justify-start"
                 onClick={() => {
                   const today = new Date()
+                  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
+                  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+                  onDateRangeChange({
+                    startDate: firstDay,
+                    endDate: lastDay,
+                    label: 'This month',
+                  })
+                }}
+              >
+                This month
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start"
+                onClick={() => {
+                  const today = new Date()
                   const lastWeek = new Date(today)
                   lastWeek.setDate(today.getDate() - 7)
                   onDateRangeChange({
