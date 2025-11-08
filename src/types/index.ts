@@ -101,3 +101,57 @@ export enum KPIMetricType {
   EXPECTED = 'expected',
   EXPENSES = 'expenses',
 }
+
+// Insight category types
+export enum InsightCategory {
+  ANOMALIES = 'anomalies',
+  PLATFORM_PERFORMANCE = 'platform_performance',
+  FEES_REFUNDS = 'fees_refunds',
+  FORECAST_WHATIFS = 'forecast_whatifs',
+  TIMING_RELIABILITY = 'timing_reliability',
+  TREND_MOMENTUM = 'trend_momentum',
+}
+
+export const INSIGHT_CATEGORY_LABELS: Record<InsightCategory, string> = {
+  [InsightCategory.ANOMALIES]: 'Anomaly',
+  [InsightCategory.PLATFORM_PERFORMANCE]: 'Platform',
+  [InsightCategory.FEES_REFUNDS]: 'Fees & Refunds',
+  [InsightCategory.FORECAST_WHATIFS]: 'Forecast',
+  [InsightCategory.TIMING_RELIABILITY]: 'Timing',
+  [InsightCategory.TREND_MOMENTUM]: 'Trend',
+}
+
+// Insight severity levels
+export enum InsightSeverity {
+  INFO = 'info',
+  SUCCESS = 'success',
+  WARNING = 'warning',
+  DANGER = 'danger',
+}
+
+// Insight metric types
+export enum InsightMetric {
+  POTENTIAL_INCOME = 'potential_income',
+  POTENTIAL_LOSS = 'potential_loss',
+  ACTUAL_PROFIT = 'actual_profit',
+  MIXED = 'mixed',
+}
+
+// Insight interface
+export interface Insight {
+  id: string
+  category: InsightCategory
+  title: string
+  message: string
+  severity: InsightSeverity
+  metric: InsightMetric
+  value: number
+  delta: number | null
+  period: {
+    from: string // YYYY-MM-DD
+    to: string // YYYY-MM-DD
+  }
+  confidence: number // 0.0 - 1.0
+  evidence: string[]
+  actions?: string[]
+}

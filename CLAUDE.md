@@ -96,11 +96,46 @@ Each payout entry should include:
 ### Component Structure
 
 When building, organize components by feature:
-- **Dashboard** - Main view with scenario cards and timeline
-- **PayoutTimeline** - Visual representation of when money arrives
-- **ScenarioCards** - 🔴🟡🟢 worst/expected/best case displays
-- **PlatformList** - Breakdown by sales channel
-- **Charts** - Cash-flow visualization using Recharts
+- **Dashboard** - Main view with KPI cards, chart, and insights sidebar
+- **Header** - Top navigation with user info
+- **KPICard** - Displays received, expected, and expenses metrics
+- **CashFlowChart** - Interactive cash-flow visualization using Recharts
+- **TransactionDetails** - Shows detailed transactions for a selected date
+- **DateRangePicker** - Filter for selecting date ranges
+- **InsightsSidebar** - Right sidebar displaying 6 AI-generated insights
+- **InsightCard** - Individual insight card with category, message, and actions
+- **PlatformFilter** - Filter for selecting platforms (for future use)
+
+### Insights Feature
+
+The dashboard includes an intelligent insights system that analyzes cash-flow data and surfaces actionable information:
+
+**Insight Categories (6 types):**
+1. **Anomalies** - Unusual patterns in income or expenses
+2. **Platform Performance** - Which sales channels are performing best
+3. **Fees & Refunds** - Analysis of platform fees and refund rates
+4. **Forecast What-Ifs** - Predictions about pending income and cash position
+5. **Timing Reliability** - Payout timing and completion rates
+6. **Trend Momentum** - Growth trends in profit and revenue
+
+**Insight Properties:**
+- Title and descriptive message (8-20 words)
+- Severity level: info (blue), success (green), warning (yellow), danger (red)
+- Confidence score (0-1)
+- Evidence references
+- Optional action suggestions
+
+**Behavior:**
+- Insights automatically recalculate when date range changes
+- Always displays exactly 6 insights
+- Ensures category diversity (at least 4 different categories)
+- Uses mock data generation based on actual financial metrics
+- Future: Will call backend API with aggregated data
+
+**Implementation:**
+- `generateMockInsights()` in `services/analytics.ts` - Generates insights from financial data
+- `InsightCard` component - Displays individual insight with color-coded styling
+- `InsightsSidebar` component - Fixed-width sidebar (320px on desktop, full width on mobile)
 
 ## Important Notes
 
