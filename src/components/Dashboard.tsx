@@ -3,6 +3,7 @@ import { Header } from './Header'
 import { DateRangePicker } from './DateRangePicker'
 import { KPICard } from './KPICard'
 import { CashFlowChart } from './CashFlowChart'
+import { TransactionDetails } from './TransactionDetails'
 import { mockUser, mockPayouts, mockExpenses } from '@/services/mockData'
 import { calculateKPIData, generateChartData } from '@/services/analytics'
 import { KPIMetricType, type DateRange } from '@/types'
@@ -25,6 +26,9 @@ export function Dashboard () {
     new Set([KPIMetricType.RECEIVED])
   )
 
+  // State for selected date (for transaction details)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+
   // Calculate KPI data
   const kpiData = useMemo(() => {
     return calculateKPIData(mockPayouts, mockExpenses, dateRange, [])
@@ -46,18 +50,41 @@ export function Dashboard () {
     setActiveMetrics(newMetrics)
   }
 
+  // Handle chart data point click
+  const handleDataPointClick = (dateString: string) => {
+    const clickedDate = new Date(dateString)
+    setSelectedDate(clickedDate)
+  }
+
+  // Filter transactions for selected date
+  const selectedDateTransactions = useMemo(() => {
+    if (!selectedDate) return { payouts: [], expenses: [] }
+
+    const dateStr = selectedDate.toDateString()
+
+    const payouts = mockPayouts.filter(
+      (payout) => payout.date.toDateString() === dateStr
+    )
+
+    const expenses = mockExpenses.filter(
+      (expense) => expense.date.toDateString() === dateStr
+    )
+
+    return { payouts, expenses }
+  }, [selectedDate])
+
   return (
     <div className='min-h-screen bg-background'>
       <Header user={mockUser} />
 
-      <main className='container mx-auto px-4 py-8 space-y-8'>
+      <main className='container mx-auto px-4 py-4 space-y-4'>
         {/* Filter Section */}
-        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6'>
-          <div className='space-y-1'>
-            <h1 className='text-3xl font-bold tracking-tight'>
+        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+          <div className='space-y-0.5'>
+            <h1 className='text-2xl font-bold tracking-tight'>
               Hello {mockUser.name}
             </h1>
-            <p className='text-muted-foreground'>
+            <p className='text-sm text-muted-foreground'>
               This is what's happening around your payout date range
             </p>
           </div>
@@ -70,7 +97,7 @@ export function Dashboard () {
         </div>
 
         {/* KPI Cards Section */}
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
           <KPICard
             label='Received'
             amount={kpiData.received.total}
@@ -98,7 +125,22 @@ export function Dashboard () {
         </div>
 
         {/* Chart Section */}
-        <CashFlowChart data={chartData} activeMetrics={activeMetrics} />
+        <CashFlowChart 
+          data={chartData} 
+          activeMetrics={activeMetrics}
+          onDataPointClick={handleDataPointClick}
+        />
+
+        {/* Transaction Details Section */}
+        {selectedDate && (
+          <TransactionDetails
+            date={selectedDate}
+            payouts={selectedDateTransactions.payouts}
+            expenses={selectedDateTransactions.expenses}
+            activeMetrics={activeMetrics}
+            onClose={() => setSelectedDate(null)}
+          />
+        )}
       </main>
     </div>
   )

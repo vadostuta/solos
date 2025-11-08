@@ -14,28 +14,37 @@ import { KPIMetricType } from '@/types'
 interface CashFlowChartProps {
   data: ChartDataPoint[]
   activeMetrics: Set<KPIMetricType>
+  onDataPointClick?: (date: string) => void
 }
 
-export function CashFlowChart({ data, activeMetrics }: CashFlowChartProps) {
+export function CashFlowChart({ data, activeMetrics, onDataPointClick }: CashFlowChartProps) {
   const showReceived = activeMetrics.has(KPIMetricType.RECEIVED)
   const showExpected = activeMetrics.has(KPIMetricType.EXPECTED)
   const showExpenses = activeMetrics.has(KPIMetricType.EXPENSES)
 
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
+    <Card className="p-4">
+      <div className="space-y-3">
         <div>
-          <h3 className="text-lg font-semibold">Cash Flow Trends</h3>
-          <p className="text-sm text-muted-foreground">
+          <h3 className="text-base font-semibold">Cash Flow Trends</h3>
+          <p className="text-xs text-muted-foreground">
             {activeMetrics.size === 0
               ? 'Select metrics above to view chart data'
-              : 'Daily cash flow visualization'}
+              : 'Click on any data point to view transaction details'}
           </p>
         </div>
 
         {activeMetrics.size > 0 ? (
-          <ResponsiveContainer width="100%" height={400}>
-            <AreaChart data={data}>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart 
+              data={data}
+              onClick={(data) => {
+                if (data && data.activeLabel && onDataPointClick) {
+                  onDataPointClick(data.activeLabel)
+                }
+              }}
+              style={{ cursor: onDataPointClick ? 'pointer' : 'default' }}
+            >
               <defs>
                 <linearGradient id="colorReceived" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -96,6 +105,7 @@ export function CashFlowChart({ data, activeMetrics }: CashFlowChartProps) {
                   stroke="#10b981"
                   fill="url(#colorReceived)"
                   strokeWidth={2}
+                  activeDot={{ r: 6, style: { cursor: 'pointer' } }}
                 />
               )}
               {showExpected && (
@@ -105,6 +115,7 @@ export function CashFlowChart({ data, activeMetrics }: CashFlowChartProps) {
                   stroke="#3b82f6"
                   fill="url(#colorExpected)"
                   strokeWidth={2}
+                  activeDot={{ r: 6, style: { cursor: 'pointer' } }}
                 />
               )}
               {showExpenses && (
@@ -114,12 +125,13 @@ export function CashFlowChart({ data, activeMetrics }: CashFlowChartProps) {
                   stroke="#ef4444"
                   fill="url(#colorExpenses)"
                   strokeWidth={2}
+                  activeDot={{ r: 6, style: { cursor: 'pointer' } }}
                 />
               )}
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-[400px] text-muted-foreground">
+          <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">
             Click on the KPI cards above to display chart data
           </div>
         )}
