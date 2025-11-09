@@ -141,7 +141,6 @@ export const generateChartData = (
   payouts: Payout[],
   expenses: Expense[],
   dateRange: DateRange,
-  selectedPlatforms: Platform[],
   interval: 'daily' | 'weekly' = 'daily'
 ): ChartDataPoint[] => {
   const dataPoints: ChartDataPoint[] = []
@@ -149,11 +148,11 @@ export const generateChartData = (
   // Filter data
   const filteredPayouts = filterByPlatform(
     filterByDateRange(payouts, dateRange),
-    selectedPlatforms
+    [Platform.AMAZON]
   )
   const filteredExpenses = filterByPlatform(
     filterByDateRange(expenses, dateRange),
-    selectedPlatforms
+    [Platform.AMAZON]
   )
 
   // Generate date buckets

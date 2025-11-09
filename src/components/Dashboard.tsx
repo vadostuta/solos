@@ -6,7 +6,6 @@ import { CashFlowChart } from './CashFlowChart'
 import { TransactionDetails } from './TransactionDetails'
 import { InsightsSidebar } from './InsightsSidebar'
 import { Skeleton } from './ui/skeleton'
-import { PlatformFilter } from './PlatformFilter'
 import { Button } from './ui/button'
 import { Download } from 'lucide-react'
 import { calculateKPIData, generateChartData } from '@/services/analytics'
@@ -48,9 +47,6 @@ export function Dashboard () {
     }
   })
 
-  // State for selected platforms
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([])
-
   // State for active KPI metrics (which to show in chart)
   const [activeMetrics, setActiveMetrics] = useState<Set<KPIMetricType>>(
     new Set([KPIMetricType.RECEIVED])
@@ -67,12 +63,6 @@ export function Dashboard () {
   const { data: channels = [] } = useChannels()
 
   const channelFilterIds = useMemo(() => {
-    if (selectedPlatforms.length === 0) {
-      return []
-    }
-
-    const selectedSet = new Set(selectedPlatforms)
-
     return channels
       .filter(channel => {
         if (!channel.name) return false
@@ -80,10 +70,10 @@ export function Dashboard () {
         if (!SUPPORTED_PLATFORMS.has(normalized as Platform)) {
           return false
         }
-        return selectedSet.has(normalized as Platform)
+        return true
       })
       .map(channel => channel.id)
-  }, [channels, selectedPlatforms])
+  }, [channels])
 
   // State for selected insight categories
   const [selectedCategories, setSelectedCategories] = useState<
@@ -106,19 +96,13 @@ export function Dashboard () {
 
   // Calculate KPI data
   const kpiData = useMemo(() => {
-    return calculateKPIData(payouts, expenses, dateRange, selectedPlatforms)
-  }, [payouts, expenses, dateRange, selectedPlatforms])
+    return calculateKPIData(payouts, expenses, dateRange, [Platform.AMAZON])
+  }, [payouts, expenses, dateRange])
 
   // Generate chart data
   const chartData = useMemo(() => {
-    return generateChartData(
-      payouts,
-      expenses,
-      dateRange,
-      selectedPlatforms,
-      'daily'
-    )
-  }, [payouts, expenses, dateRange, selectedPlatforms])
+    return generateChartData(payouts, expenses, dateRange, 'daily')
+  }, [payouts, expenses, dateRange])
 
   // Filter out dismissed insights and filter by selected categories
   const insights = useMemo(() => {
@@ -170,24 +154,15 @@ export function Dashboard () {
     if (!selectedDate) return { payouts: [], expenses: [] }
 
     const selectedKey = selectedDate.toISOString().split('T')[0]
-    const platformFilter =
-      selectedPlatforms.length > 0 ? new Set(selectedPlatforms) : null
 
     const filteredPayouts = payouts.filter(
       payout =>
         payout.date.toISOString().split('T')[0] === selectedKey &&
-        (!platformFilter || platformFilter.has(payout.platform))
+        payout.platform === Platform.AMAZON
     )
 
-    const filteredExpenses = expenses.filter(
-      expense =>
-        expense.date.toISOString().split('T')[0] === selectedKey &&
-        (!platformFilter ||
-          (expense.platform && platformFilter.has(expense.platform)))
-    )
-
-    return { payouts: filteredPayouts, expenses: filteredExpenses }
-  }, [selectedDate, payouts, expenses, selectedPlatforms])
+    return { payouts: filteredPayouts, expenses: expenses }
+  }, [selectedDate, payouts, expenses])
 
   const headerUser = PLACEHOLDER_USER
 
@@ -214,10 +189,6 @@ export function Dashboard () {
                   dateRange={dateRange}
                   onDateRangeChange={setDateRange}
                 />
-                {/* <PlatformFilter
-                  selectedPlatforms={selectedPlatforms}
-                  onPlatformChange={setSelectedPlatforms}
-                /> */}
                 <a href='/big_picture.pdf' download className='inline-flex'>
                   <Button variant='outline' size='sm'>
                     <Download className='h-3.5 w-3.5 mr-2' />
