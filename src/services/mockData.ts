@@ -8,7 +8,7 @@ import {
 
 // Mock user
 export const mockUser: User = {
-  name: 'Rayan',
+  name: 'Andrzej',
   avatarUrl:
     'https://pacificnwreviews.wordpress.com/wp-content/uploads/2013/04/ryan-gosling-place-beyond-the-pines.jpg',
   email: 'andrzej@example.com'

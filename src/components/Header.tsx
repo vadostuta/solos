@@ -33,7 +33,7 @@ export function Header ({ user, isFallbackMode = false }: HeaderProps) {
             {user.name}
           </span>
           <Avatar className='h-8 w-8'>
-            <AvatarImage src={user.avatarUrl} alt={user.name} />
+            <AvatarImage src='/avatar.png' alt={user.name} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </div>
