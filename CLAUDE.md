@@ -29,13 +29,14 @@ One unified dashboard to track cash flow, understand financial patterns, and mak
 **Tagline:** "Your payouts, all in one timeline — tracked, analyzed, and under control."
 
 ### Current Phase
-This is a **frontend-only implementation** with no backend. The app uses real Amazon order data (embedded CSV) combined with generated mock data for other platforms to demonstrate full functionality.
+This is a **frontend with backend API integration**. The app can connect to a .NET backend API (Swagger-documented) for real data, with automatic fallback to mock data when the backend is unavailable. This provides a seamless development experience and graceful degradation in production.
 
 ## Tech Stack
 
 - **React** - UI framework
 - **Vite** - Build tool and dev server
-- **TanStack Query** - Data fetching and state management
+- **TanStack Query** - Data fetching, caching, and state management (now actively used)
+- **Axios** - HTTP client for API requests
 - **Recharts** - Data visualization for cash-flow charts
 - **Tailwind CSS** - Utility-first styling
 - **shadcn/ui** - Component library
@@ -45,12 +46,22 @@ This is a **frontend-only implementation** with no backend. The app uses real Am
 ### Setup
 ```bash
 npm install
+cp .env.example .env  # Create environment file (already done)
+```
+
+### Environment Configuration
+Edit `.env` to configure the backend API:
+```
+VITE_API_BASE_URL=http://localhost:5000
+VITE_USE_MOCK_FALLBACK=true
 ```
 
 ### Development
 ```bash
-npm run dev          # Start Vite dev server
+npm run dev          # Start Vite dev server (default: http://localhost:5173)
 ```
+
+The app will attempt to connect to the backend API specified in `VITE_API_BASE_URL`. If the backend is unavailable, it automatically falls back to mock data.
 
 ### Building
 ```bash
@@ -67,13 +78,19 @@ npm run lint         # Run ESLint
 
 ### High-Level Structure
 
-**Frontend-Only Dashboard** - The app is structured as a client-side React application with no backend. Data flows through:
+**Frontend with Backend Integration** - The app is structured as a client-side React application with optional backend API integration. Data flows through:
 
-1. **Mock Data Layer** (`services/mockData.ts`) - Real Amazon CSV data + generated mock data for other platforms
-2. **Analytics Engine** (`services/analytics.ts`) - Calculations for KPIs, chart data, and insights generation
-3. **React State** - Local component state with useMemo for performance optimization
-4. **UI Components** - shadcn/ui components styled with Tailwind CSS
-5. **Data Visualization** - Recharts for interactive area charts
+1. **Backend API** (`services/api.ts`) - Axios-based HTTP client connecting to .NET backend
+   - Channels API: GET /api/Channels (fetch sales channels)
+   - Financial API: GET /api/Financial/received-income, expected-income, expenses
+   - Insights API: GET /api/Insights/financial
+2. **TanStack Query Hooks** (`hooks/useFinancialData.ts`) - React Query hooks for data fetching with caching
+3. **Data Transformation** (`services/dataMappers.ts`) - Maps backend DTOs to frontend types
+4. **Fallback Mock Data** (`services/mockData.ts`) - Real Amazon CSV + generated mock data (used when API unavailable)
+5. **Analytics Engine** (`services/analytics.ts`) - KPI calculations, chart data generation, mock insights
+6. **React State** - Local component state with useMemo for performance optimization
+7. **UI Components** - shadcn/ui components styled with Tailwind CSS with loading states
+8. **Data Visualization** - Recharts for interactive area charts
 
 ### Key Concepts
 
@@ -99,10 +116,26 @@ Expense interface:
 - `platform` (optional)
 
 **Data Sources:**
+
+Primary (Backend API when available):
+- Channels from `/api/Channels`
+- Received income from `/api/Financial/received-income`
+- Expected income from `/api/Financial/expected-income`
+- Expenses from `/api/Financial/expenses`
+- Insights from `/api/Insights/financial`
+
+Fallback (Mock Data when API unavailable):
 - Real Amazon order data (116 orders) parsed from embedded CSV
 - Generated mock data for Shopify, Stripe, Etsy (200+ transactions per platform)
 - Mock expenses derived from platform fees + generated categories (Marketing, Software, Shipping, Supplies)
+- Mock insights generated from financial data
 - Date range: September - December 2025
+
+**Backend API Schema (Swagger):**
+- `ChannelDto`: { id: number, name: string }
+- `FinancialRecordDto`: { date: datetime, value: double, channelId: number, channelName: string }
+- `InsightDto`: { id, category, title, message, severity, metric, value, delta, period, confidence, evidence, actions }
+- Query parameters: startDate, endDate, channelIds (optional filters)
 
 ### Component Structure
 
@@ -262,6 +295,14 @@ The app uses a hybrid approach:
 ## Current Implementation Status
 
 ### ✅ Fully Implemented
+- **Backend API Integration** with automatic fallback to mock data
+  - Channels API (GET /api/Channels)
+  - Financial API (received-income, expected-income, expenses)
+  - Insights API (GET /api/Insights/financial)
+  - Graceful error handling and fallback logic
+- **TanStack Query** for data fetching, caching, and state management
+- **Loading states** with skeleton loaders for all major components
+- **Fallback mode indicator** in header when using mock data
 - KPI tracking with period-over-period comparison (Received, Expected, Expenses)
 - Interactive cash flow chart with multiple metrics
 - Transaction drill-down by date
@@ -272,28 +313,34 @@ The app uses a hybrid approach:
 - Real Amazon order data integration
 - Multi-platform mock data generation
 - Expense tracking with categories
+- Data transformation layer (backend DTOs → frontend types)
 
 ### ⚠️ Not Yet Implemented
-- **Platform filter**: `PlatformFilter` component is mentioned but not used in Dashboard
-- **Scenario visualization**: Original concept of Worst/Expected/Best case scenarios is not visualized (only Expected calculation used internally)
-- **Backend integration**: No API calls, authentication, or data persistence
-- **Currency consistency**: Chart uses $ but insights show €
+- **Authentication**: Backend API currently has no auth (headers ready for future implementation)
+- **Platform filter**: `PlatformFilter` component exists but not integrated into Dashboard
+- **Channel-based filtering**: Backend supports channelIds filter but not exposed in UI yet
+- **Scenario visualization**: Original concept of Worst/Expected/Best case scenarios is not visualized
+- **Currency consistency**: Chart uses $ but insights show € (needs standardization)
 - **Export functionality**: No CSV/PDF export
 - **User settings**: No preferences or configuration
 - **Real-time updates**: No websocket or polling
 - **Historical trend analysis**: No year-over-year or custom period comparisons beyond immediate previous period
+- **Backend channel management**: POST/PUT/DELETE endpoints exist but no UI for managing channels
 
 ### 🔄 Future Enhancements (Suggested)
-- Add platform filter to Dashboard to allow filtering by specific platforms
-- Implement scenario comparison view (Worst/Expected/Best side-by-side)
-- Backend API integration for real data
-- User authentication and multi-user support
-- Data export functionality
-- Advanced filtering (by status, platform, amount range)
-- Notification system for important insights
-- Customizable insight preferences
-- Weekly/monthly email summaries
-- Integration with actual platform APIs (Shopify, Amazon, Stripe)
+- **Add authentication layer** (JWT tokens, login/logout)
+- **Expose channel filter** in Dashboard UI (backend already supports channelIds param)
+- **Channel management UI** for creating/editing channels
+- **Implement scenario comparison** view (Worst/Expected/Best side-by-side)
+- **Standardize currency** across the application
+- **User settings panel** for preferences and configuration
+- **Data export** functionality (CSV/PDF)
+- **Advanced filtering** UI (by status, platform, amount range)
+- **Notification system** for important insights
+- **Customizable insight preferences**
+- **Real-time updates** (websocket or polling)
+- **Weekly/monthly email summaries**
+- **Direct platform API integration** (Shopify, Amazon, Stripe OAuth flows)
 
 ## File Structure Reference
 
@@ -303,31 +350,272 @@ The app uses a hybrid approach:
 - `src/index.css` - Global styles and Tailwind imports
 
 ### Component Files
-- `src/components/Dashboard.tsx` - Main container with all state management
-- `src/components/Header.tsx` - Top navigation bar
+- `src/components/Dashboard.tsx` - Main container with state management and API hooks
+- `src/components/Header.tsx` - Top navigation bar with fallback mode indicator
 - `src/components/KPICard.tsx` - Individual KPI metric card
 - `src/components/DateRangePicker.tsx` - Date range selector with calendar
 - `src/components/CashFlowChart.tsx` - Recharts area chart component
 - `src/components/TransactionDetails.tsx` - Transaction breakdown panel
-- `src/components/InsightsSidebar.tsx` - Collapsible insights sidebar
+- `src/components/InsightsSidebar.tsx` - Collapsible insights sidebar with loading states
 - `src/components/InsightCard.tsx` - Individual insight display card
 - `src/components/PlatformFilter.tsx` - Platform filter (not currently used)
-- `src/components/ui/*` - shadcn/ui base components
+- `src/components/ui/*` - shadcn/ui base components (including Skeleton for loading states)
+
+### API Integration Files
+- `src/services/api.ts` - Axios client and all API endpoint functions
+- `src/services/dataMappers.ts` - Transform backend DTOs to frontend types
+- `src/hooks/useFinancialData.ts` - TanStack Query hooks with automatic fallback
 
 ### Service Files
-- `src/services/mockData.ts` - Data generation and Amazon CSV parsing
-- `src/services/analytics.ts` - All calculation logic (KPIs, charts, insights)
+- `src/services/mockData.ts` - Mock data generation and Amazon CSV parsing (fallback)
+- `src/services/analytics.ts` - All calculation logic (KPIs, charts, mock insights)
 
 ### Type Definitions
-- `src/types/index.ts` - All TypeScript interfaces and enums
+- `src/types/index.ts` - Frontend TypeScript interfaces and enums (Channel, Payout, Expense, Insight, etc.)
+- `src/types/api.ts` - Backend DTO interfaces from Swagger (ChannelDto, FinancialRecordDto, InsightDto, etc.)
 
 ### Utility Files
 - `src/lib/utils.ts` - Utility functions (classname merging)
 - `src/lib/queryClient.ts` - TanStack Query client configuration
 
 ### Configuration Files
+- `.env` - Environment variables (API base URL, fallback settings)
+- `.env.example` - Environment template (committed to repo)
 - `vite.config.ts` - Vite build configuration with path aliases
 - `tailwind.config.js` - Tailwind CSS configuration
 - `tsconfig.json` - TypeScript configuration
 - `components.json` - shadcn/ui configuration
 - `package.json` - Dependencies and scripts
+
+## Backend API Integration
+
+### Overview
+The app integrates with a .NET backend API using Axios and TanStack Query. All API calls have automatic fallback to mock data when the backend is unavailable, providing seamless offline functionality.
+
+### API Configuration
+
+**Environment Variables (.env):**
+```
+VITE_API_BASE_URL=http://localhost:5000
+VITE_USE_MOCK_FALLBACK=true
+```
+
+**Axios Client Setup** (`src/services/api.ts`):
+- Base URL from environment variable
+- 10-second timeout
+- JSON content-type headers
+- Request/response interceptors for future authentication
+- Comprehensive error handling with console warnings
+
+### Available Endpoints
+
+#### 1. Channels API
+**GET /api/Channels**
+- Returns: `ChannelDto[]`
+- Usage: Fetch all sales channels/platforms
+- Hook: `useChannels()`
+
+**GET /api/Channels/{id}**
+- Returns: `ChannelDto`
+- Usage: Fetch single channel by ID
+
+**GET /api/Channels/by-name/{name}**
+- Returns: `ChannelDto`
+- Usage: Fetch channel by name
+
+**POST /api/Channels**
+- Body: `ChannelDto` (without id)
+- Returns: `ChannelDto`
+- Usage: Create new channel
+
+**PUT /api/Channels/{id}**
+- Body: `ChannelDto`
+- Returns: void
+- Usage: Update existing channel
+
+**DELETE /api/Channels/{id}**
+- Returns: void
+- Usage: Delete channel
+
+#### 2. Financial API
+**GET /api/Financial/received-income**
+- Query params: `startDate`, `endDate`, `channelIds[]` (all optional)
+- Returns: `FinancialRecordDto[]`
+- Usage: Fetch completed payouts
+- Hook: `useReceivedIncome(dateRange, channelIds?)`
+
+**GET /api/Financial/expected-income**
+- Query params: `startDate`, `endDate`, `channelIds[]` (all optional)
+- Returns: `FinancialRecordDto[]`
+- Usage: Fetch pending/processing payouts
+- Hook: `useExpectedIncome(dateRange, channelIds?)`
+
+**GET /api/Financial/expenses**
+- Query params: `startDate`, `endDate`, `channelIds[]` (all optional)
+- Returns: `FinancialRecordDto[]`
+- Usage: Fetch expenses
+- Hook: `useExpenses(dateRange, channelIds?)`
+
+#### 3. Insights API
+**GET /api/Insights/financial**
+- Query params: `startDate`, `endDate` (both optional)
+- Returns: `InsightResponseDto` (contains `insights` array)
+- Usage: Fetch AI-generated insights
+- Hook: `useInsights(dateRange)`
+
+### Data Transformation
+
+**Backend DTOs → Frontend Types** (`src/services/dataMappers.ts`):
+
+1. **ChannelDto → Channel**
+   - Direct mapping: id, name
+
+2. **FinancialRecordDto → Payout**
+   - Maps `channelName` to `Platform` enum (case-insensitive)
+   - Calculates realistic `fees` (3-5% of value)
+   - Derives `grossAmount` and `netAmount`
+   - Generates transaction ID
+   - Sets status (RECEIVED or PENDING based on context)
+
+3. **FinancialRecordDto → Expense**
+   - Maps `channelName` to `Platform` enum
+   - Uses absolute value for amount
+   - Sets category (Platform Fees, Marketing, etc.)
+
+4. **InsightDto → Insight**
+   - Maps string categories to `InsightCategory` enum
+   - Maps string severities to `InsightSeverity` enum
+   - Maps string metrics to `InsightMetric` enum
+   - Preserves all other fields
+
+### TanStack Query Hooks
+
+**Configuration:**
+- Automatic caching (stale times: 1-5 minutes)
+- Retry logic (2 retries on failure)
+- Loading states
+- Error handling with fallback
+
+**Available Hooks:**
+
+1. **useChannels()**
+   - Fetches available channels
+   - Fallback: Returns default channels (Amazon, Shopify, Stripe, Etsy)
+   - Cache: 5 minutes
+
+2. **useReceivedIncome(dateRange, channelIds?)**
+   - Fetches completed payouts for date range
+   - Fallback: Filters mock payouts by status=RECEIVED
+   - Cache: 1 minute
+
+3. **useExpectedIncome(dateRange, channelIds?)**
+   - Fetches pending/processing payouts
+   - Fallback: Filters mock payouts by status=PENDING/PROCESSING
+   - Cache: 1 minute
+
+4. **useExpenses(dateRange, channelIds?)**
+   - Fetches expenses for date range
+   - Fallback: Filters mock expenses
+   - Cache: 1 minute
+
+5. **useFinancialData(dateRange, selectedPlatforms?)**
+   - Combined hook that fetches all financial data
+   - Returns: { payouts, expenses, isLoading, isError, error, refetch }
+   - Automatically combines received + expected payouts
+
+6. **useInsights(dateRange)**
+   - Fetches backend-generated insights
+   - Fallback: Generates mock insights from current financial data
+   - Cache: 2 minutes
+   - Enabled only when financial data is available
+
+7. **useIsFallbackMode(dateRange)**
+   - Utility hook to detect if app is using fallback data
+   - Returns: { isFallbackMode, isLoading }
+   - Used to display "Offline Mode" badge in header
+
+### Fallback Strategy
+
+**When API Fails:**
+1. Error is logged to console with warning
+2. Hook catches error in try/catch
+3. If `VITE_USE_MOCK_FALLBACK=true`, returns mock data
+4. If fallback disabled, error is thrown
+5. UI remains functional with mock data
+6. "Offline Mode" badge appears in header
+
+**Mock Data Sources:**
+- `mockPayouts` - Real Amazon CSV + generated data
+- `mockExpenses` - Platform fees + generated expenses
+- `generateMockInsights()` - Generated from current financial data
+- Default channels - Hardcoded list of 4 platforms
+
+### Testing Backend Integration
+
+**1. Test with Backend Unavailable:**
+```bash
+# Backend not running, fallback mode should activate
+npm run dev
+# Expected: App loads with mock data, "Offline Mode" badge visible
+```
+
+**2. Test with Backend Available:**
+```bash
+# Start .NET backend on port 5000
+# Start frontend
+npm run dev
+# Expected: App loads with real API data, no offline badge
+```
+
+**3. Test with Empty Backend Data:**
+```bash
+# Backend running but returns empty arrays
+# Expected: App displays "No data" states gracefully
+```
+
+### Troubleshooting
+
+**Problem: "Network Error" in console**
+- Solution: Check `VITE_API_BASE_URL` in `.env`
+- Verify backend is running on correct port
+- Check CORS settings on backend
+
+**Problem: Data not updating**
+- Solution: Check TanStack Query cache (React DevTools)
+- Force refetch: Click date range again
+- Clear cache: Restart dev server
+
+**Problem: Type errors**
+- Solution: Ensure backend DTOs match `src/types/api.ts`
+- Run `npm run lint` to check TypeScript errors
+- Verify data transformation in `dataMappers.ts`
+
+**Problem: Fallback not working**
+- Solution: Check `VITE_USE_MOCK_FALLBACK` in `.env`
+- Verify mock data exists in `mockData.ts`
+- Check console for error logs
+
+### Future Enhancements
+
+**Authentication:**
+- JWT token storage (localStorage)
+- Add `Authorization: Bearer ${token}` header in request interceptor
+- Login/logout flows
+- Token refresh logic
+
+**Real-time Updates:**
+- WebSocket connection for live data
+- Polling with shorter intervals
+- Optimistic updates on mutations
+
+**Error Handling:**
+- User-friendly error messages
+- Retry with exponential backoff
+- Toast notifications for errors
+- Error boundary components
+
+**Performance:**
+- Implement pagination for large datasets
+- Add infinite scroll for insights
+- Optimize re-renders with React.memo
+- Prefetch data on hover

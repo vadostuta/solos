@@ -1,11 +1,13 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import type { User } from '@/types'
 
 interface HeaderProps {
   user: User
+  isFallbackMode?: boolean
 }
 
-export function Header ({ user }: HeaderProps) {
+export function Header ({ user, isFallbackMode = false }: HeaderProps) {
   const initials = user.name
     .split(' ')
     .map(n => n[0])
@@ -18,6 +20,11 @@ export function Header ({ user }: HeaderProps) {
         {/* Left: Logo/App Name */}
         <div className='flex items-center gap-2'>
           <h1 className='text-xl font-bold'>Solos</h1>
+          {isFallbackMode && (
+            <Badge variant='outline' className='text-xs'>
+              Offline Mode
+            </Badge>
+          )}
         </div>
 
         {/* Right: User Section */}

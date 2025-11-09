@@ -1,23 +1,29 @@
-// Platform types
+// Channel interface (from backend API)
+export interface Channel {
+  id: number
+  name: string
+}
+
+// Platform types (for backwards compatibility and UI mapping)
 export enum Platform {
   SHOPIFY = 'shopify',
   STRIPE = 'stripe',
   ETSY = 'etsy',
-  AMAZON = 'amazon',
+  AMAZON = 'amazon'
 }
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
   [Platform.SHOPIFY]: 'Shopify',
   [Platform.STRIPE]: 'Stripe',
   [Platform.ETSY]: 'Etsy',
-  [Platform.AMAZON]: 'Amazon',
+  [Platform.AMAZON]: 'Amazon'
 }
 
 export const PLATFORM_COLORS: Record<Platform, string> = {
   [Platform.SHOPIFY]: '#96bf48',
   [Platform.STRIPE]: '#635bff',
   [Platform.ETSY]: '#f1641e',
-  [Platform.AMAZON]: '#ff9900',
+  [Platform.AMAZON]: '#ff9900'
 }
 
 // Payout status
@@ -25,20 +31,21 @@ export enum PayoutStatus {
   RECEIVED = 'received',
   PENDING = 'pending',
   PROCESSING = 'processing',
-  FAILED = 'failed',
+  FAILED = 'failed'
 }
 
 export const STATUS_LABELS: Record<PayoutStatus, string> = {
   [PayoutStatus.RECEIVED]: 'Received',
   [PayoutStatus.PENDING]: 'Pending',
   [PayoutStatus.PROCESSING]: 'Processing',
-  [PayoutStatus.FAILED]: 'Failed',
+  [PayoutStatus.FAILED]: 'Failed'
 }
 
 // Payout interface
 export interface Payout {
   id: string
   platform: Platform
+  channelId?: number // Optional channel ID from backend
   grossAmount: number
   fees: number
   netAmount: number
@@ -57,6 +64,7 @@ export interface Expense {
   category: string
   description: string
   platform?: Platform
+  channelId?: number // Optional channel ID from backend
 }
 
 // KPI metric
@@ -99,7 +107,7 @@ export interface User {
 export enum KPIMetricType {
   RECEIVED = 'received',
   EXPECTED = 'expected',
-  EXPENSES = 'expenses',
+  EXPENSES = 'expenses'
 }
 
 // Insight category types
@@ -109,7 +117,7 @@ export enum InsightCategory {
   FEES_REFUNDS = 'fees_refunds',
   FORECAST_WHATIFS = 'forecast_whatifs',
   TIMING_RELIABILITY = 'timing_reliability',
-  TREND_MOMENTUM = 'trend_momentum',
+  TREND_MOMENTUM = 'trend_momentum'
 }
 
 export const INSIGHT_CATEGORY_LABELS: Record<InsightCategory, string> = {
@@ -118,7 +126,7 @@ export const INSIGHT_CATEGORY_LABELS: Record<InsightCategory, string> = {
   [InsightCategory.FEES_REFUNDS]: 'Fees & Refunds',
   [InsightCategory.FORECAST_WHATIFS]: 'Forecast',
   [InsightCategory.TIMING_RELIABILITY]: 'Timing',
-  [InsightCategory.TREND_MOMENTUM]: 'Trend',
+  [InsightCategory.TREND_MOMENTUM]: 'Trend'
 }
 
 // Insight severity levels
@@ -126,7 +134,7 @@ export enum InsightSeverity {
   INFO = 'info',
   SUCCESS = 'success',
   WARNING = 'warning',
-  DANGER = 'danger',
+  DANGER = 'danger'
 }
 
 // Insight metric types
@@ -134,7 +142,7 @@ export enum InsightMetric {
   POTENTIAL_INCOME = 'potential_income',
   POTENTIAL_LOSS = 'potential_loss',
   ACTUAL_PROFIT = 'actual_profit',
-  MIXED = 'mixed',
+  MIXED = 'mixed'
 }
 
 // Insight interface

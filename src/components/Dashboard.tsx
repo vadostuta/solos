@@ -5,12 +5,14 @@ import { KPICard } from './KPICard'
 import { CashFlowChart } from './CashFlowChart'
 import { TransactionDetails } from './TransactionDetails'
 import { InsightsSidebar } from './InsightsSidebar'
-import { mockUser, mockPayouts, mockExpenses } from '@/services/mockData'
+import { Skeleton } from './ui/skeleton'
+import { mockUser } from '@/services/mockData'
+import { calculateKPIData, generateChartData } from '@/services/analytics'
 import {
-  calculateKPIData,
-  generateChartData,
-  generateMockInsights
-} from '@/services/analytics'
+  useFinancialData,
+  useInsights,
+  useIsFallbackMode
+} from '@/hooks/useFinancialData'
 import { KPIMetricType, InsightCategory, type DateRange } from '@/types'
 
 export function Dashboard () {
@@ -44,20 +46,29 @@ export function Dashboard () {
     Set<InsightCategory>
   >(new Set(Object.values(InsightCategory)))
 
+  // Fetch financial data from API (with fallback to mock data)
+  const {
+    payouts,
+    expenses,
+    isLoading: isLoadingFinancial
+  } = useFinancialData(dateRange)
+
+  // Fetch insights from API (with fallback to mock insights)
+  const { data: allInsights = [], isLoading: isLoadingInsights } =
+    useInsights(dateRange)
+
+  // Check if we're in fallback mode
+  const { isFallbackMode } = useIsFallbackMode(dateRange)
+
   // Calculate KPI data
   const kpiData = useMemo(() => {
-    return calculateKPIData(mockPayouts, mockExpenses, dateRange, [])
-  }, [dateRange])
+    return calculateKPIData(payouts, expenses, dateRange, [])
+  }, [payouts, expenses, dateRange])
 
   // Generate chart data
   const chartData = useMemo(() => {
-    return generateChartData(mockPayouts, mockExpenses, dateRange, [], 'daily')
-  }, [dateRange])
-
-  // Generate insights
-  const allInsights = useMemo(() => {
-    return generateMockInsights(mockPayouts, mockExpenses, dateRange, kpiData)
-  }, [dateRange, kpiData])
+    return generateChartData(payouts, expenses, dateRange, [], 'daily')
+  }, [payouts, expenses, dateRange])
 
   // Filter out dismissed insights and filter by selected categories
   const insights = useMemo(() => {
@@ -109,20 +120,20 @@ export function Dashboard () {
 
     const dateStr = selectedDate.toDateString()
 
-    const payouts = mockPayouts.filter(
+    const filteredPayouts = payouts.filter(
       payout => payout.date.toDateString() === dateStr
     )
 
-    const expenses = mockExpenses.filter(
+    const filteredExpenses = expenses.filter(
       expense => expense.date.toDateString() === dateStr
     )
 
-    return { payouts, expenses }
-  }, [selectedDate])
+    return { payouts: filteredPayouts, expenses: filteredExpenses }
+  }, [selectedDate, payouts, expenses])
 
   return (
     <div className='min-h-screen bg-background'>
-      <Header user={mockUser} />
+      <Header user={mockUser} isFallbackMode={isFallbackMode} />
 
       <div className='container mx-auto px-4 py-4'>
         <div className='flex flex-col lg:flex-row gap-6'>
@@ -148,38 +159,52 @@ export function Dashboard () {
 
             {/* KPI Cards Section */}
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-              <KPICard
-                label='Received'
-                amount={kpiData.received.total}
-                change={kpiData.received.change}
-                changePercentage={kpiData.received.changePercentage}
-                isActive={activeMetrics.has(KPIMetricType.RECEIVED)}
-                onClick={() => toggleMetric(KPIMetricType.RECEIVED)}
-              />
-              <KPICard
-                label='Expected'
-                amount={kpiData.expected.total}
-                change={kpiData.expected.change}
-                changePercentage={kpiData.expected.changePercentage}
-                isActive={activeMetrics.has(KPIMetricType.EXPECTED)}
-                onClick={() => toggleMetric(KPIMetricType.EXPECTED)}
-              />
-              <KPICard
-                label='Expenses'
-                amount={kpiData.expenses.total}
-                change={kpiData.expenses.change}
-                changePercentage={kpiData.expenses.changePercentage}
-                isActive={activeMetrics.has(KPIMetricType.EXPENSES)}
-                onClick={() => toggleMetric(KPIMetricType.EXPENSES)}
-              />
+              {isLoadingFinancial ? (
+                <>
+                  <Skeleton className='h-[120px] w-full' />
+                  <Skeleton className='h-[120px] w-full' />
+                  <Skeleton className='h-[120px] w-full' />
+                </>
+              ) : (
+                <>
+                  <KPICard
+                    label='Received'
+                    amount={kpiData.received.total}
+                    change={kpiData.received.change}
+                    changePercentage={kpiData.received.changePercentage}
+                    isActive={activeMetrics.has(KPIMetricType.RECEIVED)}
+                    onClick={() => toggleMetric(KPIMetricType.RECEIVED)}
+                  />
+                  <KPICard
+                    label='Expected'
+                    amount={kpiData.expected.total}
+                    change={kpiData.expected.change}
+                    changePercentage={kpiData.expected.changePercentage}
+                    isActive={activeMetrics.has(KPIMetricType.EXPECTED)}
+                    onClick={() => toggleMetric(KPIMetricType.EXPECTED)}
+                  />
+                  <KPICard
+                    label='Expenses'
+                    amount={kpiData.expenses.total}
+                    change={kpiData.expenses.change}
+                    changePercentage={kpiData.expenses.changePercentage}
+                    isActive={activeMetrics.has(KPIMetricType.EXPENSES)}
+                    onClick={() => toggleMetric(KPIMetricType.EXPENSES)}
+                  />
+                </>
+              )}
             </div>
 
             {/* Chart Section */}
-            <CashFlowChart
-              data={chartData}
-              activeMetrics={activeMetrics}
-              onDataPointClick={handleDataPointClick}
-            />
+            {isLoadingFinancial ? (
+              <Skeleton className='h-[400px] w-full' />
+            ) : (
+              <CashFlowChart
+                data={chartData}
+                activeMetrics={activeMetrics}
+                onDataPointClick={handleDataPointClick}
+              />
+            )}
 
             {/* Transaction Details Section */}
             {selectedDate && (
@@ -199,6 +224,7 @@ export function Dashboard () {
             onDismiss={handleDismissInsight}
             selectedCategories={selectedCategories}
             onCategoryToggle={handleCategoryToggle}
+            isLoading={isLoadingInsights}
           />
         </div>
       </div>
