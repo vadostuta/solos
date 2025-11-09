@@ -9,7 +9,8 @@ import {
   ChevronDown,
   Settings2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Info
 } from 'lucide-react'
 
 interface InsightsSidebarProps {
@@ -29,6 +30,7 @@ export function InsightsSidebar ({
 }: InsightsSidebarProps) {
   const [visibleCount, setVisibleCount] = useState(6)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isLegendOpen, setIsLegendOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
 
   const visibleInsights = insights.slice(0, visibleCount)
@@ -56,6 +58,44 @@ export function InsightsSidebar ({
               <span className='text-xs text-muted-foreground'>
                 {insights.length}
               </span>
+              <Popover open={isLegendOpen} onOpenChange={setIsLegendOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='h-5 w-5 p-0 text-muted-foreground hover:text-primary'
+                  >
+                    <Info className='h-3 w-3' />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className='w-64 text-[11px] space-y-2'
+                  align='start'
+                >
+                  <div>
+                    <h4 className='font-medium text-xs mb-1'>
+                      Reading the metrics
+                    </h4>
+                    <p>
+                      <span className='font-semibold'>z-score</span> shows how
+                      far a value is from the average in standard deviations.
+                    </p>
+                  </div>
+                  <div>
+                    <p>
+                      <span className='font-semibold'>pp</span> (percentage
+                      points) compares percentages directly (e.g. 40% → 45% =
+                      +5pp).
+                    </p>
+                  </div>
+                  <div>
+                    <p className='text-muted-foreground'>
+                      These cues flag unusual swings so you can react fast—no
+                      extra math needed.
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className='flex items-center gap-1'>

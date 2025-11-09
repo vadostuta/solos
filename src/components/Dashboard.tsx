@@ -6,27 +6,50 @@ import { CashFlowChart } from './CashFlowChart'
 import { TransactionDetails } from './TransactionDetails'
 import { InsightsSidebar } from './InsightsSidebar'
 import { Skeleton } from './ui/skeleton'
-import { mockUser } from '@/services/mockData'
+import { PlatformFilter } from './PlatformFilter'
+import { Button } from './ui/button'
+import { Download } from 'lucide-react'
 import { calculateKPIData, generateChartData } from '@/services/analytics'
 import {
+  useChannels,
   useFinancialData,
   useInsights,
   useIsFallbackMode
 } from '@/hooks/useFinancialData'
-import { KPIMetricType, InsightCategory, type DateRange } from '@/types'
+import {
+  KPIMetricType,
+  InsightCategory,
+  Platform,
+  type DateRange,
+  type User
+} from '@/types'
+
+const SUPPORTED_PLATFORMS = new Set(Object.values(Platform))
+
+const PLACEHOLDER_USER: User = {
+  name: 'Andrzej',
+  avatarUrl: '/avatar.png'
+}
 
 export function Dashboard () {
   // State for filters
   const [dateRange, setDateRange] = useState<DateRange>(() => {
     const today = new Date()
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+    const firstDayLastMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() - 1,
+      1
+    )
+    const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0)
     return {
-      startDate: firstDay,
-      endDate: lastDay,
-      label: 'This month'
+      startDate: firstDayLastMonth,
+      endDate: lastDayLastMonth,
+      label: 'Last month'
     }
   })
+
+  // State for selected platforms
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([])
 
   // State for active KPI metrics (which to show in chart)
   const [activeMetrics, setActiveMetrics] = useState<Set<KPIMetricType>>(
@@ -41,6 +64,27 @@ export function Dashboard () {
     new Set()
   )
 
+  const { data: channels = [] } = useChannels()
+
+  const channelFilterIds = useMemo(() => {
+    if (selectedPlatforms.length === 0) {
+      return []
+    }
+
+    const selectedSet = new Set(selectedPlatforms)
+
+    return channels
+      .filter(channel => {
+        if (!channel.name) return false
+        const normalized = channel.name.toLowerCase()
+        if (!SUPPORTED_PLATFORMS.has(normalized as Platform)) {
+          return false
+        }
+        return selectedSet.has(normalized as Platform)
+      })
+      .map(channel => channel.id)
+  }, [channels, selectedPlatforms])
+
   // State for selected insight categories
   const [selectedCategories, setSelectedCategories] = useState<
     Set<InsightCategory>
@@ -51,7 +95,7 @@ export function Dashboard () {
     payouts,
     expenses,
     isLoading: isLoadingFinancial
-  } = useFinancialData(dateRange)
+  } = useFinancialData(dateRange, channelFilterIds)
 
   // Fetch insights from API (with fallback to mock insights)
   const { data: allInsights = [], isLoading: isLoadingInsights } =
@@ -62,13 +106,19 @@ export function Dashboard () {
 
   // Calculate KPI data
   const kpiData = useMemo(() => {
-    return calculateKPIData(payouts, expenses, dateRange, [])
-  }, [payouts, expenses, dateRange])
+    return calculateKPIData(payouts, expenses, dateRange, selectedPlatforms)
+  }, [payouts, expenses, dateRange, selectedPlatforms])
 
   // Generate chart data
   const chartData = useMemo(() => {
-    return generateChartData(payouts, expenses, dateRange, [], 'daily')
-  }, [payouts, expenses, dateRange])
+    return generateChartData(
+      payouts,
+      expenses,
+      dateRange,
+      selectedPlatforms,
+      'daily'
+    )
+  }, [payouts, expenses, dateRange, selectedPlatforms])
 
   // Filter out dismissed insights and filter by selected categories
   const insights = useMemo(() => {
@@ -110,7 +160,8 @@ export function Dashboard () {
 
   // Handle chart data point click
   const handleDataPointClick = (dateString: string) => {
-    const clickedDate = new Date(dateString)
+    // Ensure we interpret the chart date label in local time to avoid timezone shifts
+    const clickedDate = new Date(`${dateString}T00:00:00`)
     setSelectedDate(clickedDate)
   }
 
@@ -118,22 +169,31 @@ export function Dashboard () {
   const selectedDateTransactions = useMemo(() => {
     if (!selectedDate) return { payouts: [], expenses: [] }
 
-    const dateStr = selectedDate.toDateString()
+    const selectedKey = selectedDate.toISOString().split('T')[0]
+    const platformFilter =
+      selectedPlatforms.length > 0 ? new Set(selectedPlatforms) : null
 
     const filteredPayouts = payouts.filter(
-      payout => payout.date.toDateString() === dateStr
+      payout =>
+        payout.date.toISOString().split('T')[0] === selectedKey &&
+        (!platformFilter || platformFilter.has(payout.platform))
     )
 
     const filteredExpenses = expenses.filter(
-      expense => expense.date.toDateString() === dateStr
+      expense =>
+        expense.date.toISOString().split('T')[0] === selectedKey &&
+        (!platformFilter ||
+          (expense.platform && platformFilter.has(expense.platform)))
     )
 
     return { payouts: filteredPayouts, expenses: filteredExpenses }
-  }, [selectedDate, payouts, expenses])
+  }, [selectedDate, payouts, expenses, selectedPlatforms])
+
+  const headerUser = PLACEHOLDER_USER
 
   return (
     <div className='min-h-screen bg-background'>
-      <Header user={mockUser} isFallbackMode={isFallbackMode} />
+      <Header user={headerUser} isFallbackMode={isFallbackMode} />
 
       <div className='container mx-auto px-4 py-4'>
         <div className='flex flex-col lg:flex-row gap-6'>
@@ -143,17 +203,27 @@ export function Dashboard () {
             <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
               <div className='space-y-0.5'>
                 <h1 className='text-2xl font-bold tracking-tight'>
-                  Hello {mockUser.name}
+                  Hello {headerUser.name}
                 </h1>
                 <p className='text-sm text-muted-foreground'>
                   This is what's happening around your payout date range
                 </p>
               </div>
-              <div className='flex items-center gap-4'>
+              <div className='flex items-center gap-2 sm:gap-3'>
                 <DateRangePicker
                   dateRange={dateRange}
                   onDateRangeChange={setDateRange}
                 />
+                {/* <PlatformFilter
+                  selectedPlatforms={selectedPlatforms}
+                  onPlatformChange={setSelectedPlatforms}
+                /> */}
+                <a href='/big_picture.pdf' download className='inline-flex'>
+                  <Button variant='outline' size='sm'>
+                    <Download className='h-3.5 w-3.5 mr-2' />
+                    Big Picture
+                  </Button>
+                </a>
               </div>
             </div>
 

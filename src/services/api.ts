@@ -10,7 +10,8 @@ import type {
  * API Configuration
  */
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://ceorlish-unfavoring-shakita.ngrok-free.dev'
 const USE_MOCK_FALLBACK = import.meta.env.VITE_USE_MOCK_FALLBACK === 'true'
 
 /**
@@ -19,7 +20,8 @@ const USE_MOCK_FALLBACK = import.meta.env.VITE_USE_MOCK_FALLBACK === 'true'
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'any'
   },
   timeout: 10000 // 10 seconds
 })
@@ -254,7 +256,7 @@ export const fetchInsights = async (
     }
 
     const response = await apiClient.get<InsightResponseDto>(
-      `/api/Insights/financial?${queryParams.toString()}`
+      `/api/financial?${queryParams.toString()}`
     )
     return response.data
   } catch (error) {
@@ -267,4 +269,3 @@ export const fetchInsights = async (
  * Export the configured axios instance for advanced usage
  */
 export { apiClient }
-

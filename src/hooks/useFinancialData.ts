@@ -18,14 +18,7 @@ import {
 import { mockPayouts, mockExpenses } from '@/services/mockData'
 import { generateMockInsights } from '@/services/analytics'
 import { filterByDateRange, calculateKPIData } from '@/services/analytics'
-import type {
-  Channel,
-  Payout,
-  Expense,
-  Insight,
-  DateRange,
-  Platform
-} from '@/types'
+import type { Channel, Payout, Expense, Insight, DateRange } from '@/types'
 import { PayoutStatus } from '@/types'
 
 /**
@@ -175,11 +168,13 @@ export const useExpenses = (
  */
 export const useFinancialData = (
   dateRange: DateRange,
-  selectedPlatforms: Platform[] = []
+  channelIds: number[] = []
 ) => {
-  const receivedQuery = useReceivedIncome(dateRange)
-  const expectedQuery = useExpectedIncome(dateRange)
-  const expensesQuery = useExpenses(dateRange)
+  const filter = channelIds.length > 0 ? channelIds : undefined
+
+  const receivedQuery = useReceivedIncome(dateRange, filter)
+  const expectedQuery = useExpectedIncome(dateRange, filter)
+  const expensesQuery = useExpenses(dateRange, filter)
 
   // Combine all payouts
   const allPayouts: Payout[] = [

@@ -58,24 +58,18 @@ export const mapFinancialRecordToPayout = (
     ? mapChannelToPlatform(record.channelName)
     : Platform.SHOPIFY
 
-  // Calculate realistic fees (3-5% of value)
-  const feeRate = 0.03 + Math.random() * 0.02
-  const fees = Math.abs(record.value * feeRate)
   const grossAmount = Math.abs(record.value)
-  const netAmount = grossAmount - fees
 
   return {
     id: `payout-${record.channelId}-${record.date}`,
     platform,
     channelId: record.channelId,
     grossAmount,
-    fees,
-    netAmount,
+    fees: 0,
+    netAmount: grossAmount,
     date: new Date(record.date),
     status,
-    probability: status === PayoutStatus.PENDING ? 0.85 : undefined,
-    transactionId: `TXN-${record.channelId}-${Date.parse(record.date)}`,
-    description: `${record.channelName || 'Unknown'} payout`
+    description: `${record.channelName || 'Channel ' + record.channelId} payout`
   }
 }
 
